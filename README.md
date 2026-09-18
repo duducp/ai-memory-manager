@@ -47,41 +47,38 @@ servidor — para isso, veja a documentação do upstream.
 
 ## Instalação rápida (via curl)
 
-O mesmo `install.sh` detecta o sistema operacional.
+O mesmo `install.sh` detecta o sistema operacional (macOS e Linux).
 
-### macOS
+### Interativo (menu)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash -s install
-```
-
-### Linux (Ubuntu 22.04+ / Debian 12+)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash -s install
-```
-
-> Em execução por pipe é obrigatório passar o comando após `-s` (por exemplo `bash -s install`); sem isso o script apenas exibe a ajuda.
-
-Sem argumentos, o script abre um **menu interativo** (quando há terminal), lendo de
-`/dev/tty` para funcionar mesmo em `curl | bash`:
+Sem argumentos, abre um menu para escolher o que fazer: instalar, atualizar, status,
+doctor, logs, instruções ou desinstalar. Funciona em `curl | bash` porque o menu lê de
+`/dev/tty`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash
 ```
 
-O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
-`NO_COLOR=1` para desativar as cores.
+### Instalação direta (sem menu)
 
-> Em modo pipe, o `install.sh` baixa um snapshot do repositório (o `src/`) a cada
-> execução, então `status`/`doctor`/`logs` também exigem rede. Em um checkout local, os
-> módulos de `src/` são usados diretamente, sem download.
+Passe o comando após `-s` para pular o menu.
 
-Para usar uma branch ou tag específica, defina `AI_MEMORY_MANAGER_REF`:
+**macOS**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | AI_MEMORY_MANAGER_REF=v1.0.0 bash -s install
+curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash -s install
 ```
+
+**Linux (Ubuntu 22.04+ / Debian 12+)**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash -s install
+```
+
+> Sem terminal (por exemplo em CI), o script não abre o menu e mostra a ajuda.
+
+Os demais comandos funcionam do mesmo jeito: `bash -s status`, `bash -s doctor`,
+`bash -s update`, `bash -s uninstall`.
 
 ### Forma recomendada (mais segura)
 
@@ -92,6 +89,21 @@ curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/insta
 less install.sh
 bash install.sh install
 ```
+
+### Versão, cores e rede
+
+Para fixar uma branch ou tag, defina `AI_MEMORY_MANAGER_REF`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | AI_MEMORY_MANAGER_REF=v1.0.0 bash -s install
+```
+
+O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
+`NO_COLOR=1` para desativar as cores.
+
+> Em modo pipe, o `install.sh` baixa um snapshot do repositório (o `src/`) a cada
+> execução, então `status`/`doctor`/`logs` também exigem rede. Em um checkout local, os
+> módulos de `src/` são usados diretamente, sem download.
 
 ## Requisitos
 
