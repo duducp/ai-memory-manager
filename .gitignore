@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs e temporários
+*.log
+*.tmp
+*.bak
+
+# Segredos e ambiente
+.env
+.env.*
+*.pem
+*.key
+
+# Artefatos de build/teste
+dist/
+build/
+coverage/
