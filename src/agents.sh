@@ -93,13 +93,15 @@ agents_detect() {
 
 # Preenche GLOBAL_TARGETS com os paths únicos de arquivos globais de
 # instrução dos agentes detectados. Emite aviso para agentes sem arquivo
-# global conhecido e não cria arquivos.
+# global conhecido (a menos que quiet=true) e não cria arquivos.
 agents_global_targets() {
+  local quiet="${1:-false}"
+
   GLOBAL_TARGETS=()
   agents_detect
 
   if (( ${#DETECTED_AGENTS[@]} == 0 )); then
-    warn "Nenhum agente suportado foi detectado."
+    [[ "$quiet" == "true" ]] || warn "Nenhum agente suportado foi detectado."
     return 0
   fi
 
@@ -109,7 +111,7 @@ agents_global_targets() {
     parse_agent "$entry"
 
     if ! path="$(agent_global_instruction_file "$AGENT_NAME")"; then
-      warn "$(agents_display_name "$AGENT_NAME") não tem arquivo global de instruções conhecido; pulando."
+      [[ "$quiet" == "true" ]] || warn "$(agents_display_name "$AGENT_NAME") não tem arquivo global de instruções conhecido; pulando."
       continue
     fi
 
@@ -325,6 +327,54 @@ agents_configure() {
   done
 }
 
+# Remove o bloco de roteamento dos arquivos globais de instrução dos
+# agentes detectados. Ownership-aware: remove apenas o trecho entre os
+# marcadores do ai-memory; nunca apaga o arquivo nem conteúdo do usuário.
+agents_uninstall_global_instructions() {
+  agents_global_targets true
+  if (( ${#GLOBAL_TARGETS[@]} == 0 )); then
+    return 0
+  fi
+
+  require_cmd python3
+
+  local path rc
+  for path in "${GLOBAL_TARGETS[@]}"; do
+    [[ -f "$path" ]] || continue
+
+    rc=0
+    python3 - "$path" <<'PYBLOCK' || rc=$?
+import pathlib, sys
+target = pathlib.Path(sys.argv[1])
+text = target.read_text()
+start_marker = "<!-- ai-memory:start -->"
+end_marker = "<!-- ai-memory:end -->"
+start = text.find(start_marker)
+if start < 0:
+    raise SystemExit(3)
+end = text.find(end_marker, start)
+if end < 0:
+    raise SystemExit(3)
+end += len(end_marker)
+before = text[:start].rstrip("\n")
+after = text[end:].lstrip("\n")
+if before and after:
+    new = before + "\n\n" + after
+else:
+    new = before + after
+if new and not new.endswith("\n"):
+    new += "\n"
+target.write_text(new)
+PYBLOCK
+
+    case "$rc" in
+      0) log "Instruções globais removidas: $path" ;;
+      3) ;; # nada a remover
+      *) warn "Não foi possível limpar instruções globais em $path." ;;
+    esac
+  done
+}
+
 agents_uninstall() {
   agents_detect
 
@@ -351,6 +401,9 @@ agents_uninstall() {
         ;;
     esac
   done
+
+  # Remove também o bloco de roteamento dos arquivos globais de instrução.
+  agents_uninstall_global_instructions
 
   # ai-memory uninstall is intentionally the authority for ownership-aware
   # cleanup. Do not blindly delete agent config files.
