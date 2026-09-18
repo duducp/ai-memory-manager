@@ -58,6 +58,8 @@ load_installer() {
 
   BOOTSTRAP_TMP="$(mktemp -d -t ai-memory-manager.XXXXXX)"
   local url="https://codeload.github.com/${REPO_SLUG}/tar.gz/${REF}"
+  # O snapshot do instalador vem por HTTPS do GitHub (mesma origem de confiança do
+  # próprio script). A release do ai-memory, que é executada, é validada por SHA-256.
   boot_log "Baixando instalador (${REF})..."
   curl -fsSL --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 120 \
     -A "ai-memory-manager-bootstrap" "$url" -o "${BOOTSTRAP_TMP}/src.tar.gz"

@@ -25,6 +25,10 @@ aberto.
 Na prática é um único binário que expõe um servidor HTTP/MCP (por padrão em
 `127.0.0.1:49374`) e guarda tudo em um diretório de dados.
 
+Para ver quanto conteúdo já foi acumulado: `install.sh status` mostra o tamanho em disco,
+e `ai-memory status` (ou a ferramenta MCP `memory_status`) mostra contagens de páginas,
+sessões e observações.
+
 ## O que este projeto faz
 
 Este repositório é o **instalador** do ai-memory para macOS e Linux. Ele não faz parte do
@@ -118,7 +122,7 @@ O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
 | --- | --- |
 | `install` | Baixa a release, instala o binário, cria o serviço do usuário e configura os agentes detectados. |
 | `update` | Atualiza para a última release com validação SHA-256 e rollback automático em caso de falha. |
-| `status` | Mostra versão, estado do serviço, servidor, dados e agentes detectados. |
+| `status` | Mostra versão, serviço, servidor, tamanho dos dados e agentes detectados. |
 | `doctor` | Diagnóstico completo da instalação, com verificações e health dos agentes. |
 | `logs` | Acompanha os logs do servidor em tempo real. |
 | `instructions` | Atualiza `AGENTS.md` e/ou `CLAUDE.md` (Português ou English). |

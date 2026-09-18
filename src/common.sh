@@ -100,6 +100,12 @@ sha256_of() {
   fi
 }
 
+# /mcp responde não-2xx a um GET simples; qualquer resposta prova que o HTTP está vivo.
+server_responds() {
+  curl -sS --max-time 2 -o /dev/null \
+    -w "%{http_code}" "${MCP_URL}" 2>/dev/null | grep -Eq '^[1-5][0-9][0-9]$'
+}
+
 wait_for_server() {
   local max_attempts=20
   local attempt=1
@@ -107,9 +113,7 @@ wait_for_server() {
   log "Aguardando ai-memory responder em ${SERVER_URL}..."
 
   while (( attempt <= max_attempts )); do
-    # /mcp responde não-2xx a um GET simples; qualquer resposta prova que o HTTP está vivo.
-    if curl -sS --max-time 2 -o /dev/null \
-      -w "%{http_code}" "${MCP_URL}" 2>/dev/null | grep -Eq '^[1-5][0-9][0-9]$'; then
+    if server_responds; then
       success "Servidor HTTP está respondendo."
       return 0
     fi

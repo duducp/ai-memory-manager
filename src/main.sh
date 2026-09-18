@@ -12,7 +12,10 @@ cmd_install() {
 
   release_download
   release_extract_to "$ARCHIVE" "${INSTALL_ROOT}.new.$$"
-  release_swap_in "${INSTALL_ROOT}.new.$$"
+  if ! release_swap_in "${INSTALL_ROOT}.new.$$"; then
+    rm -rf "${INSTALL_ROOT}.new.$$"
+    die "Não foi possível ativar o novo release."
+  fi
 
   if ! init_memory || ! platform_service_install || ! wait_for_server; then
     platform_service_uninstall || true
@@ -53,7 +56,11 @@ cmd_update() {
   release_extract_to "$ARCHIVE" "$new_root"
 
   platform_service_uninstall || true
-  release_swap_in "$new_root"
+  if ! release_swap_in "$new_root"; then
+    rm -rf "$new_root"
+    platform_service_install || true
+    die "Não foi possível ativar o novo release; release anterior restaurado."
+  fi
 
   if ! init_memory; then
     release_restore_previous "${OLD_RELEASE:-}"

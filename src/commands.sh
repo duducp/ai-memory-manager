@@ -15,16 +15,20 @@ cmd_status() {
     echo "  Binary:      NOT INSTALLED"
   fi
 
+  echo "  Platform:    $(platform_name)"
   echo "  Service:     $(platform_service_status)"
 
-  if curl -sS --max-time 2 -o /dev/null \
-      -w "%{http_code}" "${MCP_URL}" 2>/dev/null | grep -Eq '^[1-5][0-9][0-9]$'; then
+  if server_responds; then
     echo "  HTTP:        OK (${SERVER_URL})"
   else
     echo "  HTTP:        NOT RESPONDING (${SERVER_URL})"
   fi
 
-  [[ -d "$DATA_DIR" ]] && echo "  Data:        OK" || echo "  Data:        MISSING"
+  if [[ -d "$DATA_DIR" ]]; then
+    echo "  Data:        OK ($(du -sh "$DATA_DIR" 2>/dev/null | awk '{print $1}'))"
+  else
+    echo "  Data:        MISSING"
+  fi
   [[ -d "$LOG_DIR" ]] && echo "  Logs:        $LOG_DIR" || echo "  Logs:        MISSING"
 
   echo
@@ -68,7 +72,7 @@ cmd_doctor() {
   doctor_check "ai-memory binary" test -x "$BINARY"
   doctor_check "data directory" test -d "$DATA_DIR"
   doctor_check "service active" platform_service_is_active
-  doctor_check "HTTP server" bash -c "curl -sS --max-time 2 -o /dev/null -w '%{http_code}' '${MCP_URL}' | grep -Eq '^[1-5][0-9][0-9]$'"
+  doctor_check "HTTP server" server_responds
 
   platform_extra_doctor_checks doctor_check
 

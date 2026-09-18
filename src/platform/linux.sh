@@ -59,7 +59,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=${BIN_LINK} serve --transport http --bind ${SERVER_HOST}:${SERVER_PORT}
+ExecStart=${BINARY} serve --transport http --bind ${SERVER_HOST}:${SERVER_PORT}
 WorkingDirectory=${DATA_DIR}
 Restart=always
 RestartSec=2

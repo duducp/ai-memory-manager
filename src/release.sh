@@ -42,6 +42,8 @@ release_extract_to() {
   local staging="${TMP_DIR}/staging"
   local extracted_binary
 
+  [[ -n "${TMP_DIR:-}" ]] || die "TMP_DIR não inicializado (release_download não foi executado)."
+
   rm -rf "$staging" "$target"
   mkdir -p "$staging" "$target"
 
@@ -57,6 +59,8 @@ release_swap_in() {
   local new_root="$1"
   local old_root="${INSTALL_ROOT}.old.$$"
 
+  rm -rf "$old_root"
+
   if [[ -e "$INSTALL_ROOT" || -L "$INSTALL_ROOT" ]]; then
     mv "$INSTALL_ROOT" "$old_root"
   fi
@@ -65,7 +69,7 @@ release_swap_in() {
     if [[ -e "$old_root" ]]; then
       mv "$old_root" "$INSTALL_ROOT" || true
     fi
-    die "Não foi possível ativar o novo release."
+    return 1
   fi
 
   mkdir -p "$BIN_DIR"

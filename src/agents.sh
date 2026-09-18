@@ -118,16 +118,6 @@ agents_display_name() {
   esac
 }
 
-agent_mcp_client() {
-  parse_agent "$1"
-  printf '%s' "$AGENT_MCP"
-}
-
-agent_hook_agent() {
-  parse_agent "$1"
-  printf '%s' "$AGENT_HOOK"
-}
-
 agent_has_mcp() {
   parse_agent "$1"
   local name="$AGENT_NAME"
@@ -169,8 +159,8 @@ agent_has_mcp() {
 }
 
 agent_has_hooks() {
-  local name="$1"
-  parse_agent "$name"
+  parse_agent "$1"
+  local name="$AGENT_NAME"
   [[ "$AGENT_HOOK" != "-" ]] || return 1
 
   # Native staged hooks live here for current releases.
