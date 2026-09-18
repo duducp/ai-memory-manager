@@ -32,7 +32,7 @@ cmd_status() {
   agents_detect
 
   if (( ${#DETECTED_AGENTS[@]} == 0 )); then
-    echo "    - none"
+    echo "    - nenhum"
   else
     local item entry method
     for item in "${DETECTED_AGENTS[@]}"; do
@@ -271,9 +271,9 @@ EOF
       (cd "$project_dir" && "$BINARY" "${args[@]}")
       [[ "$preview" == "true" ]] || success "$f atualizado pelo mecanismo oficial do ai-memory."
     else
-      # Install official skills first. We use --no-skills below because the
-      # localized block is written by this wrapper; this keeps ownership markers
-      # and managed skill contents under ai-memory's control.
+      require_cmd python3
+      # Instala as instruções oficiais primeiro; em seguida este wrapper escreve
+      # o bloco localizado em português, preservando os marcadores de ownership.
       if [[ "$preview" != "true" ]]; then
         local args=(install-instructions --target "$f")
         [[ "$compact" == "true" ]] && args+=(--compact)

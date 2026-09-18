@@ -4,6 +4,47 @@ Instalador multi-plataforma para o [ai-memory](https://github.com/akitaonrails/a
 
 O script baixa a release oficial do ai-memory, instala o binário, registra o servidor HTTP como serviço do usuário e conecta os agentes suportados (MCP + hooks) encontrados na máquina.
 
+## O que é o ai-memory
+
+O [ai-memory](https://github.com/akitaonrails/ai-memory) é um servidor de **memória de
+longo prazo para agentes de programação com IA**. Ele resolve o problema de continuidade:
+você pode parar no meio de uma tarefa no Claude Code, abrir o Codex no mesmo diretório e
+continuar sem reexplicar a arquitetura, as abordagens que falharam ou as perguntas em
+aberto.
+
+- **Entre agentes:** mais de 20 harnesses (Claude Code, Codex, Cursor, Gemini CLI,
+  OpenCode, Grok, Devin, Kimi, Kiro, etc.) compartilham a mesma memória.
+- **Entre máquinas:** a memória vive num servidor que você mesmo roda — no laptop, num
+  homelab ou na LAN.
+- **Em equipe:** um servidor por time, com atribuição por pessoa e log de auditoria.
+- **Memória em markdown:** a fonte da verdade é um wiki de arquivos `.md` versionado em
+  git; o banco é apenas um índice derivado, reconstruível a partir dos arquivos.
+- **Captura automática:** hooks de ciclo de vida registram prompts, chamadas de ferramenta
+  e limites de sessão, sanitizados antes de armazenar. Funciona sem nenhuma chamada de LLM.
+
+Na prática é um único binário que expõe um servidor HTTP/MCP (por padrão em
+`127.0.0.1:49374`) e guarda tudo em um diretório de dados.
+
+## O que este projeto faz
+
+Este repositório é o **instalador** do ai-memory para macOS e Linux. Ele não faz parte do
+projeto upstream e não reimplementa nada: baixa a release oficial e orquestra a instalação.
+
+Em um único comando (`curl | bash`), ele:
+
+1. Detecta o sistema operacional e a arquitetura (arm64/x86_64).
+2. Baixa a release oficial do ai-memory e **valida o SHA-256** antes de instalar.
+3. Instala o binário e o coloca no `PATH` (`~/.local/bin`).
+4. Registra o servidor como serviço do usuário — `launchd` no macOS, `systemd --user` no
+   Linux — para iniciar no login e reiniciar sozinho.
+5. Detecta os agentes de IA instalados na máquina e conecta cada um via MCP e hooks,
+   delegando aos comandos oficiais `install-mcp` / `install-hooks`.
+6. Atualiza com **rollback automático**: se a nova versão falhar no `init`, no serviço ou
+   no HTTP, a versão anterior é restaurada.
+
+O que ele **não** faz: configurar provedores de LLM, autenticação ou deploy remoto do
+servidor — para isso, veja a documentação do upstream.
+
 ## Instalação rápida (via curl)
 
 O mesmo `install.sh` detecta o sistema operacional.
@@ -31,6 +72,10 @@ curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/insta
 
 O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
 `NO_COLOR=1` para desativar as cores.
+
+> Em modo pipe, o `install.sh` baixa um snapshot do repositório (o `src/`) a cada
+> execução, então `status`/`doctor`/`logs` também exigem rede. Em um checkout local, os
+> módulos de `src/` são usados diretamente, sem download.
 
 Para usar uma branch ou tag específica, defina `AI_MEMORY_MANAGER_REF`:
 
@@ -152,4 +197,4 @@ convenções e o contrato de plataforma.
 
 ## Licença
 
-Defina a licença do repositório conforme sua preferência (ex.: MIT).
+MIT — veja [LICENSE](LICENSE).

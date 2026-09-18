@@ -28,7 +28,6 @@ platform_require() {
   require_cmd tar
   require_cmd launchctl
   require_cmd plutil
-  require_cmd python3
   if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1; then
     die "É necessário shasum ou sha256sum."
   fi

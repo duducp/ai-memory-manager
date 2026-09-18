@@ -129,16 +129,19 @@ agent_hook_agent() {
 }
 
 agent_has_mcp() {
-  local name="$1"
-  local client
-  client="$(agent_mcp_client "$name")"
-  [[ "$client" != "-" ]] || return 1
+  parse_agent "$1"
+  local name="$AGENT_NAME"
+  [[ "$AGENT_MCP" != "-" ]] || return 1
 
   case "$name" in
     claude-code)
-      [[ -f "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" || -f "$HOME/.claude.json" ]] &&
-        grep -Fq "$MCP_URL" "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null || \
-      [[ -f "$HOME/.claude.json" ]] && grep -Fq "$MCP_URL" "$HOME/.claude.json" 2>/dev/null
+      local f
+      for f in "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" "$HOME/.claude.json"; do
+        if [[ -f "$f" ]] && grep -Fq "$MCP_URL" "$f" 2>/dev/null; then
+          return 0
+        fi
+      done
+      return 1
       ;;
     opencode)
       [[ -f "$HOME/.config/opencode/opencode.json" ]] && grep -Fq "$MCP_URL" "$HOME/.config/opencode/opencode.json"

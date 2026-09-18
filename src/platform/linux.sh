@@ -32,12 +32,17 @@ platform_require() {
   require_cmd tar
   require_cmd systemctl
   require_cmd loginctl
-  require_cmd python3
   if ! command -v sha256sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
     die "É necessário sha256sum ou shasum."
   fi
   systemctl --user show-environment >/dev/null 2>&1 ||
     die "systemd --user não está disponível nesta sessão."
+
+  # StandardOutput=append: exige systemd >= 240.
+  local sd_version
+  sd_version="$(systemctl --version | awk 'NR == 1 {print $2}')"
+  [[ "$sd_version" =~ ^[0-9]+$ ]] || sd_version=0
+  (( sd_version >= 240 )) || die "É necessário systemd 240 ou superior (encontrado: ${sd_version})."
 }
 
 platform_asset_name() {

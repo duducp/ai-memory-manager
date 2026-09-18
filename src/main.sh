@@ -13,12 +13,15 @@ cmd_install() {
   release_download
   release_extract_to "$ARCHIVE" "${INSTALL_ROOT}.new.$$"
   release_swap_in "${INSTALL_ROOT}.new.$$"
-  init_memory
-  platform_service_install
 
-  if ! wait_for_server; then
+  if ! init_memory || ! platform_service_install || ! wait_for_server; then
     platform_service_uninstall || true
-    release_restore_previous "${OLD_RELEASE:-}" || true
+    if [[ -n "${OLD_RELEASE:-}" && -d "${OLD_RELEASE:-}" ]]; then
+      release_restore_previous "$OLD_RELEASE" || true
+    else
+      rm -rf "$INSTALL_ROOT"
+      rm -f "$BIN_LINK"
+    fi
     die "A instalação não pôde iniciar o servidor."
   fi
 
@@ -45,10 +48,11 @@ cmd_update() {
   log "Versão atual: ${old_version:-desconhecida}"
 
   release_download
-  platform_service_uninstall || true
 
   local new_root="${INSTALL_ROOT}.new.$$"
   release_extract_to "$ARCHIVE" "$new_root"
+
+  platform_service_uninstall || true
   release_swap_in "$new_root"
 
   if ! init_memory; then

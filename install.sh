@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.0.0"
 REPO_SLUG="duducp/ai-memory-manager"
 REF="${AI_MEMORY_MANAGER_REF:-main}"
 BOOTSTRAP_TMP=""
@@ -55,8 +54,10 @@ load_installer() {
   command -v curl >/dev/null 2>&1 || boot_die "curl é obrigatório."
   command -v tar >/dev/null 2>&1 || boot_die "tar é obrigatório."
 
+  [[ "$REF" =~ ^[A-Za-z0-9._/-]+$ ]] || boot_die "AI_MEMORY_MANAGER_REF inválido: $REF"
+
   BOOTSTRAP_TMP="$(mktemp -d -t ai-memory-manager.XXXXXX)"
-  local url="https://codeload.github.com/${REPO_SLUG}/tar.gz/refs/heads/${REF}"
+  local url="https://codeload.github.com/${REPO_SLUG}/tar.gz/${REF}"
   boot_log "Baixando instalador (${REF})..."
   curl -fsSL --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 120 \
     -A "ai-memory-manager-bootstrap" "$url" -o "${BOOTSTRAP_TMP}/src.tar.gz"
