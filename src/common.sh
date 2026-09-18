@@ -3,24 +3,41 @@ set -euo pipefail
 
 REPO="akitaonrails/ai-memory"
 PROG="${AI_MEMORY_MANAGER_PROG:-install.sh}"
-SCRIPT_VERSION="${SCRIPT_VERSION:-7.0.0}"
+SCRIPT_VERSION="${SCRIPT_VERSION:-1.0.0}"
 
 TMP_DIR=""
 
+# Cores apenas quando a saída é um terminal e NO_COLOR não está definido.
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  C_RESET=$'\033[0m'
+  C_BOLD=$'\033[1m'
+  C_BLUE=$'\033[1;34m'
+  C_GREEN=$'\033[1;32m'
+  C_YELLOW=$'\033[1;33m'
+  C_RED=$'\033[1;31m'
+else
+  C_RESET=""
+  C_BOLD=""
+  C_BLUE=""
+  C_GREEN=""
+  C_YELLOW=""
+  C_RED=""
+fi
+
 log() {
-  printf '\033[1;34m[ai-memory]\033[0m %s\n' "$*"
+  printf '%s[ai-memory]%s %s\n' "$C_BLUE" "$C_RESET" "$*"
 }
 
 success() {
-  printf '\033[1;32m[ai-memory]\033[0m %s\n' "$*"
+  printf '%s[ai-memory]%s %s\n' "$C_GREEN" "$C_RESET" "$*"
 }
 
 warn() {
-  printf '\033[1;33m[ai-memory]\033[0m %s\n' "$*" >&2
+  printf '%s[ai-memory]%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2
 }
 
 die() {
-  printf '\033[1;31m[ai-memory]\033[0m %s\n' "$*" >&2
+  printf '%s[ai-memory]%s %s\n' "$C_RED" "$C_RESET" "$*" >&2
   exit 1
 }
 
@@ -39,6 +56,24 @@ expand_home() {
   local p="$1"
   p="${p/#\~/$HOME}"
   printf '%s' "$p"
+}
+
+# Verdadeiro quando existe um terminal controlador. Necessário porque em
+# `curl | bash` o stdin é o próprio script, então prompts precisam de /dev/tty.
+has_tty() {
+  [[ -c /dev/tty ]] || return 1
+  { true < /dev/tty; } 2>/dev/null
+}
+
+# prompt_line <var> <texto>: lê uma linha de /dev/tty (ou vazio sem terminal).
+prompt_line() {
+  local __var="$1"
+  local __prompt="$2"
+  local __value=""
+  if has_tty; then
+    read -r -p "$__prompt" __value < /dev/tty || true
+  fi
+  printf -v "$__var" '%s' "$__value"
 }
 
 arch_normalize() {

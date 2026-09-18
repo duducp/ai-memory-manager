@@ -16,12 +16,14 @@ O ponto de entrada público é sempre `install.sh`, executável via `curl | bash
 
 ```
 install.sh              # bootstrap fino (entry do curl); não contém lógica de instalação
+Makefile                # lint, syntax, check
+CONTRIBUTING.md         # guia de contribuição
 src/
   main.sh               # dispatch de comandos + fluxos install/update/uninstall
-  common.sh             # logging, cleanup, expand_home, versão, sha256, wait_for_server
+  common.sh             # logging, cleanup, expand_home, versão, sha256, wait_for_server, prompt
   release.sh            # download da release, validação, instalação atômica, rollback
   agents.sh             # tabela de agentes, detecção, health, configure, uninstall
-  commands.sh           # status, doctor, logs, instructions, usage
+  commands.sh           # status, doctor, logs, instructions, menu, usage
   platform/
     macos.sh            # paths, launchd, checks macOS
     linux.sh            # paths, systemd --user, checks Linux
@@ -37,6 +39,9 @@ Não há suíte de testes automatizados (bats está fora de escopo). Use:
 
 ```bash
 # Lint obrigatório antes de concluir qualquer mudança
+make check
+
+# Equivalente sem Makefile
 shellcheck install.sh src/**/*.sh
 
 # Checagem de sintaxe (roda mesmo sem shellcheck instalado)
@@ -45,6 +50,9 @@ for f in install.sh src/*.sh src/platform/*.sh; do bash -n "$f"; done
 # Ajuda sem instalar nada (modo checkout local)
 bash install.sh help
 
+# Menu interativo (lê de /dev/tty, funciona em `curl | bash`)
+bash install.sh
+
 # Diagnóstico em uma máquina já instalada
 bash install.sh doctor
 bash install.sh status
@@ -52,9 +60,10 @@ bash install.sh status
 
 Sempre rode `shellcheck` e `bash -n` antes de considerar uma tarefa concluída.
 
-O repositório tem um `.shellcheckrc` que desabilita apenas `SC2034`, porque as
-variáveis globais (MAIÚSCULAS) são compartilhadas entre módulos via `source` e o
-`shellcheck` analisa cada arquivo isoladamente.
+O repositório tem um `.shellcheckrc` que desabilita apenas `SC2034`, `SC2120` e
+`SC2119` — falsos positivos estruturais da arquitetura modular: variáveis globais e
+comandos são compartilhados entre arquivos via `source`, e o `shellcheck` analisa cada
+arquivo isoladamente.
 
 ## Convenções de código
 
@@ -67,6 +76,10 @@ variáveis globais (MAIÚSCULAS) são compartilhadas entre módulos via `source`
   verificador SHA-256 (`shasum` ou `sha256sum`). Não adicione dependências novas sem
   necessidade justificada.
 - Evite comentários óbvios; comente apenas decisões não triviais.
+- Nunca hardcode sequências ANSI: use as variáveis `C_*` de `common.sh`. As cores são
+  desativadas automaticamente fora de um terminal e quando `NO_COLOR` está definido.
+- Prompts interativos devem ler de `/dev/tty` (via `prompt_line`), nunca de `stdin`,
+  para funcionar em `curl | bash`.
 
 ## Contrato de plataforma
 

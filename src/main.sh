@@ -7,7 +7,7 @@ cmd_install() {
   if [[ -x "$BINARY" ]]; then
     warn "ai-memory já está instalado."
     warn "Use '$PROG update' para atualizar."
-    exit 1
+    return 1
   fi
 
   release_download
@@ -123,7 +123,14 @@ main() {
     logs) shift; cmd_logs "$@" ;;
     instructions) shift; cmd_instructions "$@" ;;
     uninstall) shift; cmd_uninstall "${1:-}" ;;
-    help|-h|--help|"") usage ;;
+    help|-h|--help) usage ;;
+    "")
+      if has_tty; then
+        cmd_menu
+      else
+        usage
+      fi
+      ;;
     *) die "Comando desconhecido: $1. Use '$PROG help'." ;;
   esac
 }

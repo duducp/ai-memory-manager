@@ -2,3 +2,7 @@
 # O shellcheck analisa cada arquivo isoladamente e não vê o consumidor, então
 # SC2034 ("appears unused") é um falso positivo estrutural neste projeto.
 disable=SC2034
+# Comandos são despachados em outro módulo (src/main.sh) e o menu os chama sem
+# argumentos; o shellcheck não enxerga o chamador, gerando SC2120/SC2119.
+disable=SC2120
+disable=SC2119

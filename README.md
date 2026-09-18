@@ -22,10 +22,20 @@ curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/insta
 
 > Em execução por pipe é obrigatório passar o comando após `-s` (por exemplo `bash -s install`); sem isso o script apenas exibe a ajuda.
 
+Sem argumentos, o script abre um **menu interativo** (quando há terminal), lendo de
+`/dev/tty` para funcionar mesmo em `curl | bash`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash
+```
+
+O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
+`NO_COLOR=1` para desativar as cores.
+
 Para usar uma branch ou tag específica, defina `AI_MEMORY_MANAGER_REF`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | AI_MEMORY_MANAGER_REF=v7.0.0 bash -s install
+curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | AI_MEMORY_MANAGER_REF=v1.0.0 bash -s install
 ```
 
 ### Forma recomendada (mais segura)
@@ -115,16 +125,30 @@ A detecção usa primeiro o executável do agente e depois seus diretórios de c
 
 ```
 install.sh              # bootstrap (entry do curl)
+Makefile                # lint, syntax, check
+CONTRIBUTING.md         # como contribuir
 src/
   main.sh               # dispatch de comandos + fluxos install/update/uninstall
-  common.sh             # logging, helpers, sha256, wait_for_server
+  common.sh             # logging, helpers, sha256, wait_for_server, prompt
   release.sh            # download, validação, instalação atômica, rollback
   agents.sh             # detecção e configuração de agentes
-  commands.sh           # status, doctor, logs, instructions
+  commands.sh           # status, doctor, logs, instructions, menu
   platform/
     macos.sh            # paths, launchd, checks
     linux.sh            # paths, systemd --user, checks
 ```
+
+## Desenvolvimento
+
+```bash
+make check    # shellcheck + bash -n (obrigatório antes de PR)
+make lint     # só shellcheck
+make syntax   # só bash -n
+make help     # lista os alvos
+```
+
+Veja [`CONTRIBUTING.md`](CONTRIBUTING.md) e [`AGENTS.md`](AGENTS.md) para as
+convenções e o contrato de plataforma.
 
 ## Licença
 

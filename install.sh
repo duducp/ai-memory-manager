@@ -1,18 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="7.0.0"
+SCRIPT_VERSION="1.0.0"
 REPO_SLUG="duducp/ai-memory-manager"
 REF="${AI_MEMORY_MANAGER_REF:-main}"
 BOOTSTRAP_TMP=""
 SRC_DIR=""
 
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  BOOT_BLUE=$'\033[1;34m'
+  BOOT_RED=$'\033[1;31m'
+  BOOT_RESET=$'\033[0m'
+else
+  BOOT_BLUE=""
+  BOOT_RED=""
+  BOOT_RESET=""
+fi
+
 boot_log() {
-  printf '\033[1;34m[ai-memory]\033[0m %s\n' "$*"
+  printf '%s[ai-memory]%s %s\n' "$BOOT_BLUE" "$BOOT_RESET" "$*"
 }
 
 boot_die() {
-  printf '\033[1;31m[ai-memory]\033[0m %s\n' "$*" >&2
+  printf '%s[ai-memory]%s %s\n' "$BOOT_RED" "$BOOT_RESET" "$*" >&2
   exit 1
 }
 

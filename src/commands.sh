@@ -58,9 +58,9 @@ cmd_doctor() {
     local label="$1"
     shift
     if "$@" >/dev/null 2>&1; then
-      printf '  \033[1;32m✓\033[0m %s\n' "$label"
+      printf '  %s✓%s %s\n' "$C_GREEN" "$C_RESET" "$label"
     else
-      printf '  \033[1;31m✗\033[0m %s\n' "$label"
+      printf '  %s✗%s %s\n' "$C_RED" "$C_RESET" "$label"
       failures=$((failures + 1))
     fi
   }
@@ -175,6 +175,7 @@ cmd_instructions() {
   local project_dir="$PWD"
   local preview="false"
   local compact="true"
+  local answer=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -222,12 +223,12 @@ EOF
       target="agents"
     elif [[ -f "$project_dir/CLAUDE.md" ]]; then
       target="claude"
-    elif [[ -t 0 ]]; then
+    elif has_tty; then
       echo "Qual arquivo deseja atualizar?"
       echo "  1) AGENTS.md"
       echo "  2) CLAUDE.md"
       echo "  3) Ambos"
-      read -r -p "Escolha [1-3]: " answer
+      prompt_line answer "Escolha [1-3]: "
       case "$answer" in
         1) target="agents" ;; 2) target="claude" ;; 3) target="both" ;;
         *) die "Opção inválida." ;;
@@ -240,12 +241,12 @@ EOF
   case "$target" in agents|claude|both) ;; *) die "--target inválido." ;; esac
 
   if [[ -z "$lang" ]]; then
-    if [[ -t 0 ]]; then
+    if has_tty; then
       echo
       echo "Idioma:"
       echo "  1) Português (pt-BR)"
       echo "  2) English (en)"
-      read -r -p "Escolha [1-2]: " answer
+      prompt_line answer "Escolha [1-2]: "
       case "$answer" in 1) lang="pt-BR" ;; 2) lang="en" ;; *) die "Opção inválida." ;; esac
     else
       die "Modo não interativo: informe --lang pt-BR|en."
@@ -330,11 +331,53 @@ PYBLOCK
   done
 }
 
-usage() {
-  cat <<EOF
-ai-memory installer v${SCRIPT_VERSION}
+cmd_menu() {
+  while true; do
+    printf '\n%sai-memory installer v%s%s\n\n' "$C_BOLD" "$SCRIPT_VERSION" "$C_RESET"
+    cat <<'EOF'
+O que você deseja fazer?
 
+  1) Instalar
+  2) Atualizar
+  3) Status
+  4) Diagnóstico (doctor)
+  5) Logs
+  6) Instruções (AGENTS.md / CLAUDE.md)
+  7) Desinstalar
+  8) Ajuda
+  0) Sair
+
+EOF
+
+    local choice=""
+    prompt_line choice "${C_BOLD}Escolha [0-8]:${C_RESET} "
+
+    case "$choice" in
+      1) cmd_install || true ;;
+      2) cmd_update || true ;;
+      3) cmd_status ;;
+      4) cmd_doctor || true ;;
+      5) cmd_logs || true ;;
+      6) cmd_instructions || true ;;
+      7) cmd_uninstall || true ;;
+      8) usage ;;
+      0|"") return 0 ;;
+      *) warn "Opção inválida: $choice" ;;
+    esac
+
+    local again=""
+    prompt_line again "${C_BOLD}Pressione Enter para voltar ao menu (q para sair):${C_RESET} "
+    case "$again" in q|Q) return 0 ;; esac
+  done
+}
+
+usage() {
+  printf '\n%sai-memory installer v%s%s\n\n' "$C_BOLD" "$SCRIPT_VERSION" "$C_RESET"
+  cat <<EOF
 Uso:
+  $PROG
+      Sem argumentos, abre um menu interativo (quando há terminal).
+
   $PROG install
       Instala o ai-memory, cria o serviço do usuário e detecta/configura
       automaticamente os agentes suportados encontrados na máquina.
