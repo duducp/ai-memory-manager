@@ -1,0 +1,4 @@
+# Variáveis globais (MAIÚSCULAS) são compartilhadas entre módulos via `source`.
+# O shellcheck analisa cada arquivo isoladamente e não vê o consumidor, então
+# SC2034 ("appears unused") é um falso positivo estrutural neste projeto.
+disable=SC2034

@@ -52,6 +52,10 @@ bash install.sh status
 
 Sempre rode `shellcheck` e `bash -n` antes de considerar uma tarefa concluída.
 
+O repositório tem um `.shellcheckrc` que desabilita apenas `SC2034`, porque as
+variáveis globais (MAIÚSCULAS) são compartilhadas entre módulos via `source` e o
+`shellcheck` analisa cada arquivo isoladamente.
+
 ## Convenções de código
 
 - Bash puro, com `set -euo pipefail` em **todos** os arquivos.
