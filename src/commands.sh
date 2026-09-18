@@ -336,8 +336,12 @@ PYBLOCK
 }
 
 cmd_menu() {
+  local notice
+  notice="$(update_notice_line)"
+
   while true; do
     printf '\n%sai-memory installer v%s%s\n\n' "$C_BOLD" "$SCRIPT_VERSION" "$C_RESET"
+    [[ -n "$notice" ]] && printf '%s\n\n' "$notice"
     cat <<'EOF'
 O que você deseja fazer?
 

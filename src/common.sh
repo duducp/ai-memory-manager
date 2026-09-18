@@ -89,6 +89,35 @@ current_version() {
   "$BINARY" --version 2>/dev/null | head -n 1 || true
 }
 
+# Última tag publicada, obtida pelo redirect de /releases/latest (sem usar a API
+# e sem consumir rate limit). Retorna vazio se offline ou em caso de erro.
+latest_version() {
+  local url
+  url="$(curl -fsSIL --max-time 3 -o /dev/null -w '%{url_effective}' \
+    -A "ai-memory-manager" \
+    "https://github.com/${REPO}/releases/latest" 2>/dev/null || true)"
+  [[ "$url" == */releases/tag/* ]] || return 0
+  printf '%s' "${url##*/releases/tag/}"
+}
+
+# Imprime um aviso colorido quando há atualização disponível; caso contrário, nada.
+update_notice_line() {
+  [[ -n "${BINARY:-}" && -x "$BINARY" ]] || return 0
+
+  local installed latest
+  installed="$(current_version | awk '{print $NF}')"
+  [[ -n "$installed" ]] || return 0
+
+  latest="$(latest_version)"
+  [[ -n "$latest" ]] || return 0
+  latest="${latest#v}"
+
+  [[ "$latest" == "$installed" ]] && return 0
+
+  printf '%sAtualização disponível: %s → %s (use a opção 2)%s\n' \
+    "$C_YELLOW" "$installed" "$latest" "$C_RESET"
+}
+
 sha256_of() {
   local file="$1"
   if command -v shasum >/dev/null 2>&1; then

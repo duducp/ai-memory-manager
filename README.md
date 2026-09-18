@@ -63,6 +63,9 @@ doctor, logs, instruções ou desinstalar. Funciona em `curl | bash` porque o me
 curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash
 ```
 
+Ao abrir, o menu consulta a última release do ai-memory e avisa quando há atualização
+disponível (best-effort, com timeout curto; sem aviso se estiver offline).
+
 ![Menu interativo do ai-memory-manager](menu.png)
 
 ### Instalação direta (sem menu)
