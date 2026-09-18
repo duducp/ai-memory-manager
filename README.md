@@ -125,7 +125,7 @@ O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
 | --- | --- |
 | `install` | Baixa a release, instala o binário, cria o serviço do usuário e configura os agentes detectados. |
 | `update` | Atualiza para a última release com validação SHA-256 e rollback automático em caso de falha. |
-| `status` | Mostra versão, serviço, servidor, tamanho dos dados e agentes detectados. |
+| `status` | Mostra versão, serviço, servidor, tamanho dos dados, agentes detectados e avisa se há atualização. |
 | `doctor` | Diagnóstico completo da instalação, com verificações e health dos agentes. |
 | `logs` | Acompanha os logs do servidor em tempo real. |
 | `instructions` | Atualiza `AGENTS.md` e/ou `CLAUDE.md` (Português ou English). |

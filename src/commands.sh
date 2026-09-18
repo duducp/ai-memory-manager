@@ -15,6 +15,10 @@ cmd_status() {
     echo "  Binary:      NOT INSTALLED"
   fi
 
+  local latest
+  latest="$(available_update)"
+  [[ -n "$latest" ]] && echo "  Update:      $latest disponível (use '$PROG update')"
+
   echo "  Platform:    $(platform_name)"
   echo "  Service:     $(platform_service_status)"
 

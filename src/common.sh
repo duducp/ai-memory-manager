@@ -100,8 +100,8 @@ latest_version() {
   printf '%s' "${url##*/releases/tag/}"
 }
 
-# Imprime um aviso colorido quando há atualização disponível; caso contrário, nada.
-update_notice_line() {
+# Imprime a versão mais recente quando difere da instalada; caso contrário, nada.
+available_update() {
   [[ -n "${BINARY:-}" && -x "$BINARY" ]] || return 0
 
   local installed latest
@@ -114,6 +114,16 @@ update_notice_line() {
 
   [[ "$latest" == "$installed" ]] && return 0
 
+  printf '%s' "$latest"
+}
+
+# Imprime um aviso colorido quando há atualização disponível; caso contrário, nada.
+update_notice_line() {
+  local latest installed
+  latest="$(available_update)"
+  [[ -n "$latest" ]] || return 0
+
+  installed="$(current_version | awk '{print $NF}')"
   printf '%sAtualização disponível: %s → %s (use a opção 2)%s\n' \
     "$C_YELLOW" "$installed" "$latest" "$C_RESET"
 }
