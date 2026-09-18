@@ -174,123 +174,10 @@ EOF
   fi
 }
 
-cmd_instructions() {
-  platform_require
-  [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install' primeiro."
-
-  local lang=""
-  local target=""
-  local project_dir="$PWD"
-  local preview="false"
-  local compact="true"
-  local answer=""
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --lang) [[ $# -ge 2 ]] || die "--lang exige pt-BR ou en."; lang="$2"; shift 2 ;;
-      --target) [[ $# -ge 2 ]] || die "--target exige agents, claude ou both."; target="$2"; shift 2 ;;
-      --dir) [[ $# -ge 2 ]] || die "--dir exige um diretório."; project_dir="$2"; shift 2 ;;
-      --print) preview="true"; shift ;;
-      --full) compact="false"; shift ;;
-      -h|--help)
-        cat <<EOF
-Uso:
-  $PROG instructions
-  $PROG instructions --lang pt-BR --target both
-  $PROG instructions --lang en --target agents
-  $PROG instructions --lang en --target claude
-  $PROG instructions --dir /caminho/projeto
-  $PROG instructions --print
-  $PROG instructions --full
-
-Idiomas:
-  pt-BR   Português
-  en      English
-
-Targets:
-  agents  AGENTS.md
-  claude  CLAUDE.md
-  both    Ambos
-
-Por padrão, o bloco compacto oficial é instalado junto com as Agent Skills.
---full usa o bloco completo oficial.
-EOF
-        return 0 ;;
-      *) die "Opção desconhecida para instructions: $1" ;;
-    esac
-  done
-
-  [[ -d "$project_dir" ]] || die "Diretório não encontrado: $project_dir"
-  project_dir="$(cd "$project_dir" && pwd)"
-
-  # Infer the target from the agent files already present when possible.
-  if [[ -z "$target" ]]; then
-    if [[ -f "$project_dir/AGENTS.md" && -f "$project_dir/CLAUDE.md" ]]; then
-      target="both"
-    elif [[ -f "$project_dir/AGENTS.md" ]]; then
-      target="agents"
-    elif [[ -f "$project_dir/CLAUDE.md" ]]; then
-      target="claude"
-    elif has_tty; then
-      echo "Qual arquivo deseja atualizar?"
-      echo "  1) AGENTS.md"
-      echo "  2) CLAUDE.md"
-      echo "  3) Ambos"
-      prompt_line answer "Escolha [1-3]: "
-      case "$answer" in
-        1) target="agents" ;; 2) target="claude" ;; 3) target="both" ;;
-        *) die "Opção inválida." ;;
-      esac
-    else
-      die "Não foi possível inferir o target. Use --target agents|claude|both."
-    fi
-  fi
-
-  case "$target" in agents|claude|both) ;; *) die "--target inválido." ;; esac
-
-  if [[ -z "$lang" ]]; then
-    if has_tty; then
-      echo
-      echo "Idioma:"
-      echo "  1) Português (pt-BR)"
-      echo "  2) English (en)"
-      prompt_line answer "Escolha [1-2]: "
-      case "$answer" in 1) lang="pt-BR" ;; 2) lang="en" ;; *) die "Opção inválida." ;; esac
-    else
-      die "Modo não interativo: informe --lang pt-BR|en."
-    fi
-  fi
-
-  case "$lang" in pt|pt-BR|pt_BR) lang="pt-BR" ;; en|en-US|en_US) lang="en" ;; *) die "--lang inválido." ;; esac
-
-  local files=()
-  [[ "$target" == "agents" || "$target" == "both" ]] && files+=("AGENTS.md")
-  [[ "$target" == "claude" || "$target" == "both" ]] && files+=("CLAUDE.md")
-
-  # The official CLI is the source of truth. English always delegates directly.
-  # Portuguese is intentionally a localized presentation of the managed block;
-  # Agent Skills still come from the official binary, so tool guidance remains current.
-  local f
-  for f in "${files[@]}"; do
-    if [[ "$lang" == "en" ]]; then
-      local args=(install-instructions --target "$f")
-      [[ "$compact" == "true" ]] && args+=(--compact)
-      [[ "$preview" == "true" ]] && args+=(--print)
-      (cd "$project_dir" && "$BINARY" "${args[@]}")
-      [[ "$preview" == "true" ]] || success "$f atualizado pelo mecanismo oficial do ai-memory."
-    else
-      require_cmd python3
-      # Instala as instruções oficiais primeiro; em seguida este wrapper escreve
-      # o bloco localizado em português, preservando os marcadores de ownership.
-      if [[ "$preview" != "true" ]]; then
-        local args=(install-instructions --target "$f")
-        [[ "$compact" == "true" ]] && args+=(--compact)
-        (cd "$project_dir" && "$BINARY" "${args[@]}")
-      fi
-
-      local localized
-      localized="$(mktemp)"
-      cat >"$localized" <<'PTBLOCK'
+# Bloco localizado pt-BR. Mantido em um único lugar para reuso entre o
+# escopo de projeto e o global.
+instructions_localized_block() {
+  cat <<'PTBLOCK'
 <!-- ai-memory:start -->
 ## Memória de longo prazo (ai-memory)
 
@@ -307,11 +194,18 @@ Regras duráveis do projeto devem ser escritas no arquivo canônico de instruç�
 Este bloco é gerenciado pelo ai-memory. Para atualizá-lo, use `ai-memory install-instructions`; para Claude Code o padrão é `CLAUDE.md`, enquanto agentes que usam `AGENTS.md` devem usar `--target AGENTS.md`. As atualizações substituem apenas o conteúdo entre os marcadores do ai-memory.
 <!-- ai-memory:end -->
 PTBLOCK
+}
 
-      if [[ "$preview" == "true" ]]; then
-        cat "$localized"
-      else
-        python3 - "$project_dir/$f" "$localized" <<'PYBLOCK'
+# Substitui o bloco entre marcadores do arquivo pelo bloco localizado pt-BR.
+instructions_apply_localized() {
+  local file="$1"
+  require_cmd python3
+
+  local localized
+  localized="$(mktemp)"
+  instructions_localized_block >"$localized"
+
+  python3 - "$file" "$localized" <<'PYBLOCK'
 import pathlib, sys
 target = pathlib.Path(sys.argv[1])
 block = pathlib.Path(sys.argv[2]).read_text()
@@ -332,11 +226,223 @@ if not new.endswith("\n"):
     new += "\n"
 target.write_text(new)
 PYBLOCK
-        success "$f atualizado em português; Agent Skills oficiais também foram atualizadas."
-      fi
-      rm -f "$localized"
+
+  rm -f "$localized"
+}
+
+# Executa o binário oficial. Se workdir não for vazio, roda dentro dele
+# (necessário para resolver o alvo relativo e as skills de projeto).
+instructions_run_binary() {
+  local workdir="$1"
+  shift
+  if [[ -n "$workdir" ]]; then
+    (cd "$workdir" && "$BINARY" "$@")
+  else
+    "$BINARY" "$@"
+  fi
+}
+
+# Escreve o bloco do ai-memory em um arquivo alvo.
+#   $1 file         path do arquivo (relativo no projeto, absoluto no global)
+#   $2 lang         pt-BR | en
+#   $3 compact      true | false
+#   $4 preview      true | false
+#   $5 skills_scope project | global
+#   $6 workdir      diretório para cd (vazio no escopo global)
+instructions_install_one() {
+  local file="$1" lang="$2" compact="$3" preview="$4" skills_scope="$5" workdir="${6:-}"
+
+  # O binário roda dentro de $workdir (alvo relativo), então o caminho
+  # efetivo do arquivo precisa ser resolvido a partir dele.
+  local resolved="$file"
+  [[ -n "$workdir" ]] && resolved="$workdir/$file"
+
+  local args=(install-instructions --target "$file" --skills-scope "$skills_scope")
+  [[ "$compact" == "true" ]] && args+=(--compact)
+  [[ "$preview" == "true" ]] && args+=(--print)
+
+  if [[ "$preview" != "true" ]]; then
+    mkdir -p "$(dirname "$resolved")"
+  fi
+
+  if [[ "$lang" == "en" ]]; then
+    instructions_run_binary "$workdir" "${args[@]}"
+    [[ "$preview" == "true" ]] || success "$file atualizado pelo mecanismo oficial do ai-memory."
+  else
+    if [[ "$preview" != "true" ]]; then
+      instructions_run_binary "$workdir" "${args[@]}"
+      instructions_apply_localized "$resolved"
+      success "$file atualizado em português; Agent Skills oficiais também foram atualizadas."
+    else
+      printf '# Would write into: %s\n\n' "$resolved"
+      instructions_localized_block
     fi
+  fi
+}
+
+# Passada de projeto: escreve nos arquivos do projeto escolhidos por target.
+instructions_project_pass() {
+  local lang="$1" target="$2" project_dir="$3" compact="$4" preview="$5"
+
+  local files=()
+  [[ "$target" == "agents" || "$target" == "both" ]] && files+=("AGENTS.md")
+  [[ "$target" == "claude" || "$target" == "both" ]] && files+=("CLAUDE.md")
+
+  local f
+  for f in "${files[@]}"; do
+    instructions_install_one "$f" "$lang" "$compact" "$preview" "project" "$project_dir"
   done
+}
+
+# Passada global: escreve nos arquivos globais dos agentes detectados.
+instructions_global_pass() {
+  local lang="$1" compact="$2" preview="$3"
+
+  agents_global_targets
+  if (( ${#GLOBAL_TARGETS[@]} == 0 )); then
+    warn "Nenhum arquivo global de instruções elegível foi encontrado; nada a fazer."
+    return 0
+  fi
+
+  local path
+  for path in "${GLOBAL_TARGETS[@]}"; do
+    instructions_install_one "$path" "$lang" "$compact" "$preview" "global"
+  done
+}
+
+cmd_instructions() {
+  platform_require
+  [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install' primeiro."
+
+  local lang=""
+  local target=""
+  local project_dir="$PWD"
+  local preview="false"
+  local compact="true"
+  local scope=""
+  local answer=""
+  local dir_provided="false"
+  local target_provided="false"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --scope) [[ $# -ge 2 ]] || die "--scope exige project, global ou both."; scope="$2"; shift 2 ;;
+      --lang) [[ $# -ge 2 ]] || die "--lang exige pt-BR ou en."; lang="$2"; shift 2 ;;
+      --target) [[ $# -ge 2 ]] || die "--target exige agents, claude ou both."; target="$2"; target_provided="true"; shift 2 ;;
+      --dir) [[ $# -ge 2 ]] || die "--dir exige um diretório."; project_dir="$2"; dir_provided="true"; shift 2 ;;
+      --print) preview="true"; shift ;;
+      --full) compact="false"; shift ;;
+      -h|--help)
+        cat <<EOF
+Uso:
+  $PROG instructions
+  $PROG instructions --scope project --lang pt-BR --target both
+  $PROG instructions --scope global --lang en
+  $PROG instructions --scope both --lang pt-BR
+  $PROG instructions --scope global --lang en --print
+  $PROG instructions --dir /caminho/projeto
+  $PROG instructions --print
+  $PROG instructions --full
+
+Escopos:
+  project  AGENTS.md / CLAUDE.md do projeto (com terminal, pergunta; sem terminal, padrão)
+  global   Arquivos globais dos agentes detectados
+  both     Projeto + global
+
+Idiomas:
+  pt-BR   Português
+  en      English
+
+Targets (apenas no escopo project):
+  agents  AGENTS.md
+  claude  CLAUDE.md
+  both    Ambos
+
+Por padrão, o bloco compacto oficial é instalado junto com as Agent Skills.
+--full usa o bloco completo oficial.
+No escopo global, --target e --dir são ignorados.
+EOF
+        return 0 ;;
+      *) die "Opção desconhecida para instructions: $1" ;;
+    esac
+  done
+
+  if [[ -z "$scope" ]]; then
+    if has_tty; then
+      echo
+      echo "Escopo:"
+      echo "  1) Projeto (AGENTS.md / CLAUDE.md)"
+      echo "  2) Global (arquivos globais dos agentes)"
+      echo "  3) Ambos"
+      prompt_line answer "Escolha [1-3]: "
+      case "$answer" in
+        1) scope="project" ;; 2) scope="global" ;; 3) scope="both" ;;
+        *) die "Opção inválida." ;;
+      esac
+    else
+      scope="project"
+    fi
+  fi
+
+  case "$scope" in project|global|both) ;; *) die "--scope inválido: $scope. Use project, global ou both." ;; esac
+
+  if [[ "$scope" == "global" ]]; then
+    [[ "$dir_provided" == "true" ]] && warn "--dir é ignorado no escopo global."
+    [[ "$target_provided" == "true" ]] && warn "--target é ignorado no escopo global."
+  fi
+
+  # Inferência de target só se aplica ao escopo de projeto.
+  if [[ "$scope" == "project" || "$scope" == "both" ]]; then
+    [[ -d "$project_dir" ]] || die "Diretório não encontrado: $project_dir"
+    project_dir="$(cd "$project_dir" && pwd)"
+
+    if [[ -z "$target" ]]; then
+      if [[ -f "$project_dir/AGENTS.md" && -f "$project_dir/CLAUDE.md" ]]; then
+        target="both"
+      elif [[ -f "$project_dir/AGENTS.md" ]]; then
+        target="agents"
+      elif [[ -f "$project_dir/CLAUDE.md" ]]; then
+        target="claude"
+      elif has_tty; then
+        echo "Qual arquivo deseja atualizar?"
+        echo "  1) AGENTS.md"
+        echo "  2) CLAUDE.md"
+        echo "  3) Ambos"
+        prompt_line answer "Escolha [1-3]: "
+        case "$answer" in
+          1) target="agents" ;; 2) target="claude" ;; 3) target="both" ;;
+          *) die "Opção inválida." ;;
+        esac
+      else
+        die "Não foi possível inferir o target. Use --target agents|claude|both."
+      fi
+    fi
+
+    case "$target" in agents|claude|both) ;; *) die "--target inválido." ;; esac
+  fi
+
+  if [[ -z "$lang" ]]; then
+    if has_tty; then
+      echo
+      echo "Idioma:"
+      echo "  1) Português (pt-BR)"
+      echo "  2) English (en)"
+      prompt_line answer "Escolha [1-2]: "
+      case "$answer" in 1) lang="pt-BR" ;; 2) lang="en" ;; *) die "Opção inválida." ;; esac
+    else
+      die "Modo não interativo: informe --lang pt-BR|en."
+    fi
+  fi
+
+  case "$lang" in pt|pt-BR|pt_BR) lang="pt-BR" ;; en|en-US|en_US) lang="en" ;; *) die "--lang inválido." ;; esac
+
+  if [[ "$scope" == "project" || "$scope" == "both" ]]; then
+    instructions_project_pass "$lang" "$target" "$project_dir" "$compact" "$preview"
+  fi
+
+  if [[ "$scope" == "global" || "$scope" == "both" ]]; then
+    instructions_global_pass "$lang" "$compact" "$preview"
+  fi
 }
 
 cmd_service_menu() {
@@ -384,7 +490,7 @@ O que você deseja fazer?
   3) Status
   4) Diagnóstico (doctor)
   5) Logs
-  6) Instruções (AGENTS.md / CLAUDE.md)
+  6) Instruções (projeto / global)
   7) Desinstalar
   8) Ajuda
   9) Serviço (start/stop/restart/reset)
@@ -466,13 +572,22 @@ Uso:
       Mostra as últimas 100 linhas.
 
   $PROG instructions
-      Atualiza AGENTS.md e/ou CLAUDE.md. Permite escolher Português ou English.
+      Atualiza AGENTS.md/CLAUDE.md do projeto ou os arquivos globais dos
+      agentes. Com terminal, pergunta o escopo e o idioma.
 
-  $PROG instructions --lang pt-BR --target both
-      Atualiza AGENTS.md e CLAUDE.md em português.
+  $PROG instructions --scope project --lang pt-BR --target both
+      Atualiza AGENTS.md e CLAUDE.md do projeto em português.
 
-  $PROG instructions --lang en --target agents
-      Atualiza AGENTS.md usando o conteúdo oficial em inglês.
+  $PROG instructions --scope project --lang en --target agents
+      Atualiza AGENTS.md do projeto usando o conteúdo oficial em inglês.
+
+  $PROG instructions --scope global --lang en
+      Instala o roteamento nos arquivos globais dos agentes detectados
+      (ex.: ~/.claude/CLAUDE.md, ~/.codex/AGENTS.md) e nas Agent Skills
+      globais. Agentes sem arquivo global conhecido são apenas avisados.
+
+  $PROG instructions --scope both --lang pt-BR
+      Atualiza o projeto e os arquivos globais.
 
   $PROG uninstall
       Remove o ai-memory e as integrações, preservando os dados.

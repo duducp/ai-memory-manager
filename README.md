@@ -132,7 +132,7 @@ O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
 | `status` | Mostra versão, serviço, servidor, tamanho dos dados, agentes detectados e avisa se há atualização. |
 | `doctor` | Diagnóstico completo da instalação, com verificações e health dos agentes. |
 | `logs` | Acompanha os logs do servidor em tempo real. |
-| `instructions` | Atualiza `AGENTS.md` e/ou `CLAUDE.md` (Português ou English). |
+| `instructions` | Atualiza `AGENTS.md`/`CLAUDE.md` do projeto ou os arquivos globais dos agentes detectados (`--scope project\|global\|both`, Português ou English). |
 | `uninstall` | Remove o ai-memory e as integrações, preservando os dados. |
 | `uninstall --purge` | Remove tudo, incluindo a memória persistente. |
 | `help` | Exibe a ajuda. |
@@ -149,9 +149,17 @@ bash install.sh reset          # pede confirmação
 bash install.sh reset --yes    # sem confirmação
 bash install.sh logs --error
 bash install.sh logs --tail 100
-bash install.sh instructions --lang pt-BR --target both
+bash install.sh instructions --scope project --lang pt-BR --target both
+bash install.sh instructions --scope global --lang en    # arquivos globais dos agentes
+bash install.sh instructions --scope both --lang pt-BR   # projeto + global
 bash install.sh uninstall
 ```
+
+No escopo `global`, o roteamento é gravado nos arquivos globais dos agentes
+detectados (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`,
+`~/.config/opencode/AGENTS.md`, `~/.gemini/GEMINI.md`) e as Agent Skills vão para
+os roots globais. Agentes sem arquivo global documentado são apenas avisados e
+ignorados. Use `--print` para pré-visualizar sem escrever.
 
 Via curl:
 

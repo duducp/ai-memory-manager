@@ -38,6 +38,7 @@ AGENTS=(
 )
 
 DETECTED_AGENTS=()
+GLOBAL_TARGETS=()
 
 parse_agent() {
   local entry="$1"
@@ -90,6 +91,43 @@ agents_detect() {
   done
 }
 
+# Preenche GLOBAL_TARGETS com os paths únicos de arquivos globais de
+# instrução dos agentes detectados. Emite aviso para agentes sem arquivo
+# global conhecido e não cria arquivos.
+agents_global_targets() {
+  GLOBAL_TARGETS=()
+  agents_detect
+
+  if (( ${#DETECTED_AGENTS[@]} == 0 )); then
+    warn "Nenhum agente suportado foi detectado."
+    return 0
+  fi
+
+  local item entry path existing duplicate
+  for item in "${DETECTED_AGENTS[@]}"; do
+    entry="${item%|*}"
+    parse_agent "$entry"
+
+    if ! path="$(agent_global_instruction_file "$AGENT_NAME")"; then
+      warn "$(agents_display_name "$AGENT_NAME") não tem arquivo global de instruções conhecido; pulando."
+      continue
+    fi
+
+    duplicate="false"
+    if (( ${#GLOBAL_TARGETS[@]} > 0 )); then
+      for existing in "${GLOBAL_TARGETS[@]}"; do
+        if [[ "$existing" == "$path" ]]; then
+          duplicate="true"
+          break
+        fi
+      done
+    fi
+    [[ "$duplicate" == "true" ]] && continue
+
+    GLOBAL_TARGETS+=("$path")
+  done
+}
+
 agents_display_name() {
   case "$1" in
     claude-code) echo "Claude Code" ;;
@@ -115,6 +153,29 @@ agents_display_name() {
     pool) echo "Pool" ;;
     crush) echo "Crush" ;;
     *) echo "$1" ;;
+  esac
+}
+
+# Arquivo global de instruções de um agente, quando documentado.
+# Nunca invente paths: só inclua aqui agentes cujo arquivo global é
+# documentado pela própria ferramenta. Retorna 1 se não houver.
+agent_global_instruction_file() {
+  case "$1" in
+    claude-code)
+      printf '%s/CLAUDE.md' "$(expand_home "${CLAUDE_CONFIG_DIR:-$HOME/.claude}")"
+      ;;
+    codex)
+      printf '%s/AGENTS.md' "$(expand_home "$HOME/.codex")"
+      ;;
+    opencode)
+      printf '%s/AGENTS.md' "$(expand_home "$HOME/.config/opencode")"
+      ;;
+    gemini-cli)
+      printf '%s/GEMINI.md' "$(expand_home "$HOME/.gemini")"
+      ;;
+    *)
+      return 1
+      ;;
   esac
 }
 
