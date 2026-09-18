@@ -397,6 +397,10 @@ Uso:
   $PROG update
       Atualiza para a última release, valida SHA-256, testa o servidor
       e restaura automaticamente a versão anterior se o update falhar.
+      Se já estiver na última versão, não faz nada.
+
+  $PROG update --force
+      Reinstala mesmo que já esteja na última versão.
 
   $PROG status
       Mostra versão, serviço, servidor, dados e agentes detectados.

@@ -44,10 +44,26 @@ cmd_install() {
 cmd_update() {
   platform_require
 
+  local force="false"
+  case "${1:-}" in
+    "") ;;
+    --force) force="true" ;;
+    *) die "Opção desconhecida para update: $1" ;;
+  esac
+
   [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install'."
 
-  local old_version
+  local old_version installed latest
   old_version="$(current_version)"
+  installed="$(printf '%s' "$old_version" | awk '{print $NF}')"
+  latest="$(latest_version)"
+  latest="${latest#v}"
+
+  if [[ "$force" != "true" && -n "$latest" && -n "$installed" && "$latest" == "$installed" ]]; then
+    success "ai-memory já está na última versão (${installed}). Use '$PROG update --force' para reinstalar."
+    return 0
+  fi
+
   log "Versão atual: ${old_version:-desconhecida}"
 
   release_download
@@ -128,7 +144,7 @@ cmd_uninstall() {
 main() {
   case "${1:-}" in
     install) cmd_install ;;
-    update) cmd_update ;;
+    update) shift; cmd_update "${1:-}" ;;
     status) cmd_status ;;
     doctor) cmd_doctor ;;
     logs) shift; cmd_logs "$@" ;;

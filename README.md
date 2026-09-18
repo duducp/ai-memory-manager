@@ -124,7 +124,7 @@ O menu e as mensagens usam cor apenas quando a saída é um terminal. Defina
 | Comando | Descrição |
 | --- | --- |
 | `install` | Baixa a release, instala o binário, cria o serviço do usuário e configura os agentes detectados. |
-| `update` | Atualiza para a última release com validação SHA-256 e rollback automático em caso de falha. |
+| `update` | Atualiza para a última release com validação SHA-256 e rollback automático em caso de falha. Não faz nada se já estiver na última versão (use `update --force` para reinstalar). |
 | `status` | Mostra versão, serviço, servidor, tamanho dos dados, agentes detectados e avisa se há atualização. |
 | `doctor` | Diagnóstico completo da instalação, com verificações e health dos agentes. |
 | `logs` | Acompanha os logs do servidor em tempo real. |
