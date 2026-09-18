@@ -19,11 +19,11 @@ install.sh              # bootstrap fino (entry do curl); não contém lógica d
 Makefile                # lint, syntax, check
 CONTRIBUTING.md         # guia de contribuição
 src/
-  main.sh               # dispatch de comandos + fluxos install/update/uninstall
+  main.sh               # dispatch de comandos + fluxos install/update/uninstall/start/stop/restart/reset
   common.sh             # logging, cleanup, expand_home, versão, sha256, wait_for_server, prompt
   release.sh            # download da release, validação, instalação atômica, rollback
   agents.sh             # tabela de agentes, detecção, health, configure, uninstall
-  commands.sh           # status, doctor, logs, instructions, menu, usage
+  commands.sh           # status, doctor, logs, instructions, menu, serviço, usage
   platform/
     macos.sh            # paths, launchd, checks macOS
     linux.sh            # paths, systemd --user, checks Linux
@@ -94,6 +94,9 @@ depende apenas deste contrato.
 | `platform_asset_name` | Nome do asset da release para o SO/arch atual. |
 | `platform_service_install` | Escreve e ativa o serviço. |
 | `platform_service_uninstall` | Para e remove o serviço. |
+| `platform_service_start` | Inicia o serviço (retorna 0 se ativo). |
+| `platform_service_stop` | Para o serviço. |
+| `platform_service_restart` | Reinicia o serviço (retorna 0 se ativo). |
 | `platform_service_is_active` | Retorna 0 se o serviço está ativo. |
 | `platform_service_status` | Imprime `RUNNING` / `NOT RUNNING`. |
 | `platform_extra_doctor_checks` | Checks adicionais do `doctor` (default: no-op). |

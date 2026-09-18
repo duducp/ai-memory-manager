@@ -87,6 +87,20 @@ platform_service_uninstall() {
   systemctl --user daemon-reload >/dev/null 2>&1 || true
 }
 
+platform_service_start() {
+  systemctl --user start ai-memory.service
+  platform_service_is_active
+}
+
+platform_service_stop() {
+  systemctl --user stop ai-memory.service
+}
+
+platform_service_restart() {
+  systemctl --user restart ai-memory.service
+  platform_service_is_active
+}
+
 platform_service_is_active() {
   systemctl --user is-active --quiet ai-memory.service
 }

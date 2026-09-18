@@ -141,6 +141,73 @@ cmd_uninstall() {
   success "Desinstalação concluída."
 }
 
+cmd_start() {
+  platform_require
+  [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install'."
+
+  log "Iniciando o serviço..."
+  if platform_service_start; then
+    wait_for_server || warn "O serviço iniciou, mas o servidor ainda não respondeu."
+  else
+    die "Não foi possível iniciar o serviço. Verifique '$PROG doctor'."
+  fi
+}
+
+cmd_stop() {
+  platform_require
+  log "Parando o serviço..."
+  platform_service_stop
+  success "Serviço parado."
+}
+
+cmd_restart() {
+  platform_require
+  [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install'."
+
+  log "Reiniciando o serviço..."
+  if platform_service_restart; then
+    wait_for_server || warn "O serviço reiniciou, mas o servidor ainda não respondeu."
+  else
+    die "Não foi possível reiniciar o serviço. Verifique '$PROG doctor'."
+  fi
+}
+
+cmd_reset() {
+  platform_require
+  [[ -x "$BINARY" ]] || die "ai-memory não está instalado. Execute '$PROG install'."
+
+  local assume_yes="false"
+  case "${1:-}" in
+    "") ;;
+    --yes|--force) assume_yes="true" ;;
+    *) die "Opção desconhecida para reset: $1" ;;
+  esac
+
+  if [[ "$assume_yes" != "true" ]]; then
+    if has_tty; then
+      warn "Isto apaga TODA a memória do ai-memory (wiki/, db/, raw/). É irreversível."
+      local answer=""
+      prompt_line answer "Digite 'reset' para confirmar: "
+      [[ "$answer" == "reset" ]] || die "Reset cancelado."
+    else
+      die "Reset requer confirmação. Use '$PROG reset --yes' em modo não interativo."
+    fi
+  fi
+
+  log "Parando o serviço..."
+  platform_service_stop || true
+
+  log "Apagando a memória..."
+  "$BINARY" reset --confirm
+
+  log "Iniciando o serviço..."
+  if ! platform_service_start || ! wait_for_server; then
+    die "A memória foi resetada, mas o servidor não voltou a responder. Verifique '$PROG doctor'."
+  fi
+
+  success "Memória resetada; o servidor está no ar."
+}
+
 main() {
   case "${1:-}" in
     install) cmd_install ;;
@@ -150,6 +217,10 @@ main() {
     logs) shift; cmd_logs "$@" ;;
     instructions) shift; cmd_instructions "$@" ;;
     uninstall) shift; cmd_uninstall "${1:-}" ;;
+    start) cmd_start ;;
+    stop) cmd_stop ;;
+    restart) cmd_restart ;;
+    reset) shift; cmd_reset "${1:-}" ;;
     help|-h|--help) usage ;;
     "")
       if has_tty; then

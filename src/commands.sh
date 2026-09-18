@@ -339,6 +339,36 @@ PYBLOCK
   done
 }
 
+cmd_service_menu() {
+  while true; do
+    printf '\n%sServiço do ai-memory%s\n\n' "$C_BOLD" "$C_RESET"
+    cat <<'EOF'
+  1) Iniciar
+  2) Parar
+  3) Reiniciar
+  4) Resetar memória (apaga tudo)
+  0) Voltar
+
+EOF
+
+    local choice=""
+    prompt_line choice "${C_BOLD}Escolha [0-4]:${C_RESET} "
+
+    case "$choice" in
+      1) cmd_start || true ;;
+      2) cmd_stop || true ;;
+      3) cmd_restart || true ;;
+      4) cmd_reset || true ;;
+      0|"") return 0 ;;
+      *) warn "Opção inválida: $choice" ;;
+    esac
+
+    local again=""
+    prompt_line again "${C_BOLD}Pressione Enter para continuar (q para voltar):${C_RESET} "
+    case "$again" in q|Q) return 0 ;; esac
+  done
+}
+
 cmd_menu() {
   local notice
   notice="$(update_notice_line)"
@@ -357,12 +387,13 @@ O que você deseja fazer?
   6) Instruções (AGENTS.md / CLAUDE.md)
   7) Desinstalar
   8) Ajuda
+  9) Serviço (start/stop/restart/reset)
   0) Sair
 
 EOF
 
     local choice=""
-    prompt_line choice "${C_BOLD}Escolha [0-8]:${C_RESET} "
+    prompt_line choice "${C_BOLD}Escolha [0-9]:${C_RESET} "
 
     case "$choice" in
       1) cmd_install || true ;;
@@ -373,6 +404,7 @@ EOF
       6) cmd_instructions || true ;;
       7) cmd_uninstall || true ;;
       8) usage ;;
+      9) cmd_service_menu ;;
       0|"") return 0 ;;
       *) warn "Opção inválida: $choice" ;;
     esac
@@ -401,6 +433,19 @@ Uso:
 
   $PROG update --force
       Reinstala mesmo que já esteja na última versão.
+
+  $PROG start
+      Inicia o serviço.
+
+  $PROG stop
+      Para o serviço.
+
+  $PROG restart
+      Reinicia o serviço.
+
+  $PROG reset
+      Apaga TODA a memória (wiki/, db/, raw/). Requer confirmação;
+      use '$PROG reset --yes' em modo não interativo.
 
   $PROG status
       Mostra versão, serviço, servidor, dados e agentes detectados.

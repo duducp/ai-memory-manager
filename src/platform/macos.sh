@@ -101,6 +101,26 @@ platform_service_uninstall() {
   rm -f "$PLIST"
 }
 
+platform_service_start() {
+  local domain
+  domain="gui/$(id -u)"
+  launchctl bootstrap "$domain" "$PLIST" >/dev/null 2>&1 || true
+  launchctl enable "${domain}/${LABEL}" >/dev/null 2>&1 || true
+  launchctl kickstart -k "${domain}/${LABEL}" >/dev/null 2>&1 || true
+  platform_service_is_active
+}
+
+platform_service_stop() {
+  local domain
+  domain="gui/$(id -u)"
+  launchctl bootout "$domain" "$PLIST" >/dev/null 2>&1 || true
+}
+
+platform_service_restart() {
+  platform_service_stop
+  platform_service_start
+}
+
 platform_service_is_active() {
   launchctl print "gui/$(id -u)/${LABEL}" >/dev/null 2>&1
 }
