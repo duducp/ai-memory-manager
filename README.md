@@ -59,6 +59,8 @@ doctor, logs, instruções ou desinstalar. Funciona em `curl | bash` porque o me
 curl -fsSL https://raw.githubusercontent.com/duducp/ai-memory-manager/main/install.sh | bash
 ```
 
+![Menu interativo do ai-memory-manager](menu.png)
+
 ### Instalação direta (sem menu)
 
 Passe o comando após `-s` para pular o menu.
@@ -184,6 +186,7 @@ A detecção usa primeiro o executável do agente e depois seus diretórios de c
 install.sh              # bootstrap (entry do curl)
 Makefile                # lint, syntax, check
 CONTRIBUTING.md         # como contribuir
+menu.png                # screenshot do menu interativo
 src/
   main.sh               # dispatch de comandos + fluxos install/update/uninstall
   common.sh             # logging, helpers, sha256, wait_for_server, prompt
